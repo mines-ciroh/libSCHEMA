@@ -129,7 +129,11 @@ class SCHEMA(object):
             engine.apply(self.seasonality, self.anomaly, self.periodics,
                          self.get_history())
     
-    def set_val(self, key, value):
+    def set_val(self, key, value, bmiroll=False):
+        # You may wish to implement custom functionality here, e.g. to process
+        # different variables differently.
+        if bmiroll:
+            value = np.mean(value)
         self.values[key] = value
 
     def step(self, inputs=None, period=None):
