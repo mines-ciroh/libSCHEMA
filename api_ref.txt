@@ -1,0 +1,851 @@
+libschema package
+*****************
+
+
+Submodules
+==========
+
+
+libschema.analysis module
+=========================
+
+Created on Fri Jul 19 14:03:02 2024
+
+@author: dphilippus
+
+This file contains analysis helpers.
+
+libschema.analysis.kfold(data, modbuilder, parallel=0, by='id', k=10, output=None, redo=False)
+
+   Run a k-fold cross-validation over the given data.  If k=1, run
+   leave-one- out instead.  Return and save the results.
+
+   This can run over an arbitrary grouping variable, e.g. for regional
+   cross-validation.  It’s also designed to cache results for repeated
+   use in a validation notebook or similar: if *output* exists and
+   *redo* is False, it will just load the previous run from *output*
+   and return that.
+
+   Parameters:
+      * **data** (*dataframe*) – Contains id, date, (observed)
+        temperature, any predictor columns, and [by] - the grouping
+        variable.  Must not contain a GroupNo column.
+
+      * **by** (*str*) – Name of the grouping variable over which to
+        cross-validate.
+
+      * **modbuilder** (*function: dataframe ->** (**dataframe ->
+        Watershed model**)*) – Function which prepares a coefficient
+        model.  Accepts data, then returns a function which itself
+        accepts predictor data and returns a prediction data frame.
+
+      * **k** (*int*) – Number of “folds”.  k=1 will cause leave-one-
+        out validation instead.
+
+      * **output** (*str**, **filename*) – File name for where to
+        store raw results.
+
+      * **redo** (*Bool*) – If True, will rerun cross-validation
+        regardless of whether it has already been done.  If False,
+        will check if results already exist and just return those if
+        that is the case.
+
+   Return type:
+      Dataframe of raw cross-validation results.
+
+libschema.analysis.nse(sim, obs)
+
+libschema.analysis.perf_summary(data, obs='temperature', mod='temp.mod', dates='date', statlag=1)
+
+   Summarize the performance of a modeled column in data compared to
+   an observed column.
+
+   Goodness-of-fit metrics computed:
+      R2, coefficient of determination RMSE, root mean square error
+      NSE, Nash-Sutcliffe Efficiency, with comparison points:
+
+         StationaryNSE, NSE of “same as N days ago” (using statlag)
+         ClimatologyNSE, NSE of “day-of-year mean” Note that neither
+         comparison is entirely fair for an ungaged model.
+
+      AnomalyNSE: NSE of the anomaly component only Pbias: percent
+      bias (positive equals overestimation) Bias: absolute bias, or
+      mean error (positive equals overestimation) MaxMiss: mean
+      absolute error of annual maximum temperature
+
+   Parameters:
+      * **data** (*pandas DataFrame*) – DataFrame containing the
+        timeseries data to be analyzed.  This should just be for the
+        group of interest, e.g. applied to a grouped DF.
+
+      * **obs** (*str*) – Column containing observations.
+
+      * **mod** (*str*) – Column containing predictions.
+
+      * **dates** (*str*) – Column containing dates.  Must be an
+        actual Pandas datetime column.
+
+      * **statlag** (*integer*) – How many days of lag to use for
+        stationary NSE. Useful for evaluating forecast lead time.
+
+   Returns:
+      Single-row data frame containing performance statistics.
+
+   Return type:
+      pandas DataFrame
+
+
+libschema.bmi module
+====================
+
+Author: Daniel Philippus Date: 2025-02-05
+
+BMI implementation of SCHEMA.
+
+class libschema.bmi.SchemaBmi(name, inputs, input_map, input_units, output, output_units)
+
+   Bases: "Bmi"
+
+   BMI implementation for SCHEMA. Example: https://github.com/csdms
+   /bmi-example-python/blob/master/heat/bmi_heat.py
+
+   finalize()
+
+      Perform tear-down tasks for the model.
+
+      Perform all tasks that take place after exiting the model’s time
+      loop. This typically includes deallocating memory, closing files
+      and printing reports.
+
+   get_component_name()
+
+      Name of the component.
+
+      Returns:
+         The name of the component.
+
+      Return type:
+         str
+
+   get_current_time()
+
+      Return the current time of the model.
+
+      Returns:
+         The current model time.
+
+      Return type:
+         float
+
+   get_end_time()
+
+      End time of the model.
+
+      Returns:
+         The maximum model time.
+
+      Return type:
+         float
+
+   get_grid_edge_count(grid)
+
+      Get the number of edges in the grid.
+
+      Parameters:
+         **grid** (*int*) – A grid identifier.
+
+      Returns:
+         The total number of grid edges.
+
+      Return type:
+         int
+
+   get_grid_edge_nodes(grid, edge_nodes)
+
+      Get the edge-node connectivity.
+
+      Parameters:
+         * **grid** (*int*) – A grid identifier.
+
+         * **edge_nodes** (ndarray of int, shape *(2 x nnodes,)*) – A
+           numpy array to place the edge-node connectivity. For each
+           edge, connectivity is given as node at edge tail, followed
+           by node at edge head.
+
+      Returns:
+         The input numpy array that holds the edge-node connectivity.
+
+      Return type:
+         ndarray of int
+
+   get_grid_face_count(grid)
+
+      Get the number of faces in the grid.
+
+      Parameters:
+         **grid** (*int*) – A grid identifier.
+
+      Returns:
+         The total number of grid faces.
+
+      Return type:
+         int
+
+   get_grid_face_edges(grid, face_edges)
+
+      Get the face-edge connectivity.
+
+      Parameters:
+         * **grid** (*int*) – A grid identifier.
+
+         * **face_edges** (*ndarray** of **int*) – A numpy array to
+           place the face-edge connectivity.
+
+      Returns:
+         The input numpy array that holds the face-edge connectivity.
+
+      Return type:
+         ndarray of int
+
+   get_grid_face_nodes(grid, face_nodes)
+
+      Get the face-node connectivity.
+
+      Parameters:
+         * **grid** (*int*) – A grid identifier.
+
+         * **face_nodes** (*ndarray** of **int*) – A numpy array to
+           place the face-node connectivity. For each face, the nodes
+           (listed in a counter-clockwise direction) that form the
+           boundary of the face.
+
+      Returns:
+         The input numpy array that holds the face-node connectivity.
+
+      Return type:
+         ndarray of int
+
+   get_grid_node_count(grid)
+
+      Get the number of nodes in the grid.
+
+      Parameters:
+         **grid** (*int*) – A grid identifier.
+
+      Returns:
+         The total number of grid nodes.
+
+      Return type:
+         int
+
+   get_grid_nodes_per_face(grid, nodes_per_face)
+
+      Get the number of nodes for each face.
+
+      Parameters:
+         * **grid** (*int*) – A grid identifier.
+
+         * **nodes_per_face** (ndarray of int, shape *(nfaces,)*) – A
+           numpy array to place the number of nodes per face.
+
+      Returns:
+         The input numpy array that holds the number of nodes per
+         face.
+
+      Return type:
+         ndarray of int
+
+   get_grid_origin(grid, origin)
+
+      Get coordinates for the lower-left corner of the computational
+      grid.
+
+      Parameters:
+         * **grid** (*int*) – A grid identifier.
+
+         * **origin** (ndarray of float, shape *(ndim,)*) – A numpy
+           array to hold the coordinates of the lower-left corner of
+           the grid.
+
+      Returns:
+         The input numpy array that holds the coordinates of the
+         grid’s lower-left corner.
+
+      Return type:
+         ndarray of float
+
+   get_grid_rank(grid)
+
+      Get number of dimensions of the computational grid.
+
+      Parameters:
+         **grid** (*int*) – A grid identifier.
+
+      Returns:
+         Rank of the grid.
+
+      Return type:
+         int
+
+   get_grid_shape(grid, shape)
+
+      Get dimensions of the computational grid.
+
+      Parameters:
+         * **grid** (*int*) – A grid identifier.
+
+         * **shape** (ndarray of int, shape *(ndim,)*) – A numpy array
+           into which to place the shape of the grid.
+
+      Returns:
+         The input numpy array that holds the grid’s shape.
+
+      Return type:
+         ndarray of int
+
+   get_grid_size(grid)
+
+      Get the total number of elements in the computational grid.
+
+      Parameters:
+         **grid** (*int*) – A grid identifier.
+
+      Returns:
+         Size of the grid.
+
+      Return type:
+         int
+
+   get_grid_spacing(grid, spacing)
+
+      Get distance between nodes of the computational grid.
+
+      Parameters:
+         * **grid** (*int*) – A grid identifier.
+
+         * **spacing** (ndarray of float, shape *(ndim,)*) – A numpy
+           array to hold the spacing between grid rows and columns.
+
+      Returns:
+         The input numpy array that holds the grid’s spacing.
+
+      Return type:
+         ndarray of float
+
+   get_grid_type(grid)
+
+      Get the grid type as a string.
+
+      Parameters:
+         **grid** (*int*) – A grid identifier.
+
+      Returns:
+         Type of grid as a string.
+
+      Return type:
+         str
+
+   get_grid_x(grid, x)
+
+      Get coordinates of grid nodes in the x direction.
+
+      Parameters:
+         * **grid** (*int*) – A grid identifier.
+
+         * **x** (ndarray of float, shape *(nrows,)*) – A numpy array
+           to hold the x-coordinates of the grid node columns.
+
+      Returns:
+         The input numpy array that holds the grid’s column
+         x-coordinates.
+
+      Return type:
+         ndarray of float
+
+   get_grid_y(grid, y)
+
+      Get coordinates of grid nodes in the y direction.
+
+      Parameters:
+         * **grid** (*int*) – A grid identifier.
+
+         * **y** (ndarray of float, shape *(ncols,)*) – A numpy array
+           to hold the y-coordinates of the grid node rows.
+
+      Returns:
+         The input numpy array that holds the grid’s row
+         y-coordinates.
+
+      Return type:
+         ndarray of float
+
+   get_grid_z(grid, z)
+
+      Get coordinates of grid nodes in the z direction.
+
+      Parameters:
+         * **grid** (*int*) – A grid identifier.
+
+         * **z** (ndarray of float, shape *(nlayers,)*) – A numpy
+           array to hold the z-coordinates of the grid nodes layers.
+
+      Returns:
+         The input numpy array that holds the grid’s layer
+         z-coordinates.
+
+      Return type:
+         ndarray of float
+
+   get_input_item_count()
+
+      Count of a model’s input variables.
+
+      Returns:
+         The number of input variables.
+
+      Return type:
+         int
+
+   get_input_var_names()
+
+      List of a model’s input variables.
+
+      Input variable names must be CSDMS Standard Names, also known as
+      *long variable names*.
+
+      Returns:
+         The input variables for the model.
+
+      Return type:
+         list of str
+
+      -[ Notes ]-
+
+      Standard Names enable the CSDMS framework to determine whether
+      an input variable in one model is equivalent to, or compatible
+      with, an output variable in another model. This allows the
+      framework to automatically connect components.
+
+      Standard Names do not have to be used within the model.
+
+   get_output_item_count()
+
+      Count of a model’s output variables.
+
+      Returns:
+         The number of output variables.
+
+      Return type:
+         int
+
+   get_output_var_names()
+
+      List of a model’s output variables.
+
+      Output variable names must be CSDMS Standard Names, also known
+      as *long variable names*.
+
+      Returns:
+         The output variables for the model.
+
+      Return type:
+         list of str
+
+   get_start_time()
+
+      Start time of the model.
+
+      Model times should be of type float.
+
+      Returns:
+         The model start time.
+
+      Return type:
+         float
+
+   get_time_step()
+
+      Return the current time step of the model.
+
+      The model time step should be of type float.
+
+      Returns:
+         The time step used in model.
+
+      Return type:
+         float
+
+   get_time_units()
+
+      Time units of the model.
+
+      Returns:
+         The model time unit; e.g., *days* or *s*.
+
+      Return type:
+         str
+
+      -[ Notes ]-
+
+      CSDMS uses the UDUNITS standard from Unidata.
+
+   get_value(name, dest)
+
+      Get a copy of values of the given variable.
+
+      This is a getter for the model, used to access the model’s
+      current state. It returns a *copy* of a model variable, with the
+      return type, size and rank dependent on the variable.
+
+      Parameters:
+         * **name** (*str*) – An input or output variable name, a
+           CSDMS Standard Name.
+
+         * **dest** (*ndarray*) – A numpy array into which to place
+           the values.
+
+      Returns:
+         The same numpy array that was passed as an input buffer.
+
+      Return type:
+         ndarray
+
+   get_value_at_indices(name, dest, inds)
+
+      Get values at particular indices.
+
+      Parameters:
+         * **name** (*str*) – An input or output variable name, a
+           CSDMS Standard Name.
+
+         * **dest** (*ndarray*) – A numpy array into which to place
+           the values.
+
+         * **inds** (*array_like*) – The indices into the variable
+           array.
+
+      Returns:
+         Value of the model variable at the given location.
+
+      Return type:
+         array_like
+
+   get_value_ptr(name)
+
+      Get a reference to values of the given variable.
+
+      This is a getter for the model, used to access the model’s
+      current state. It returns a reference to a model variable, with
+      the return type, size and rank dependent on the variable.
+
+      Parameters:
+         **name** (*str*) – An input or output variable name, a CSDMS
+         Standard Name.
+
+      Returns:
+         A reference to a model variable.
+
+      Return type:
+         array_like
+
+   get_var_grid(name)
+
+      Get grid identifier for the given variable.
+
+      Parameters:
+         **name** (*str*) – An input or output variable name, a CSDMS
+         Standard Name.
+
+      Returns:
+         The grid identifier.
+
+      Return type:
+         int
+
+   get_var_itemsize(name)
+
+      Get memory use for each array element in bytes.
+
+      Parameters:
+         **name** (*str*) – An input or output variable name, a CSDMS
+         Standard Name.
+
+      Returns:
+         Item size in bytes.
+
+      Return type:
+         int
+
+   get_var_location(name)
+
+      Get the grid element type that the a given variable is defined
+      on.
+
+      The grid topology can be composed of *nodes*, *edges*, and
+      *faces*.
+
+      *node*
+         A point that has a coordinate pair or triplet: the most basic
+         element of the topology.
+
+      *edge*
+         A line or curve bounded by two *nodes*.
+
+      *face*
+         A plane or surface enclosed by a set of edges. In a 2D
+         horizontal application one may consider the word “polygon”,
+         but in the hierarchy of elements the word “face” is most
+         common.
+
+      Parameters:
+         **name** (*str*) – An input or output variable name, a CSDMS
+         Standard Name.
+
+      Returns:
+         The grid location on which the variable is defined. Must be
+         one of *“node”*, *“edge”*, or *“face”*.
+
+      Return type:
+         str
+
+      -[ Notes ]-
+
+      CSDMS uses the ugrid conventions to define unstructured grids.
+
+   get_var_nbytes(name)
+
+      Get size, in bytes, of the given variable.
+
+      Parameters:
+         **name** (*str*) – An input or output variable name, a CSDMS
+         Standard Name.
+
+      Returns:
+         The size of the variable, counted in bytes.
+
+      Return type:
+         int
+
+   get_var_type(name)
+
+      Get data type of the given variable.
+
+      Parameters:
+         **name** (*str*) – An input or output variable name, a CSDMS
+         Standard Name.
+
+      Returns:
+         The Python variable type; e.g., "str", "int", "float".
+
+      Return type:
+         str
+
+   get_var_units(name)
+
+      Get units of the given variable.
+
+      Standard unit names, in lower case, should be used, such as
+      "meters" or "seconds". Standard abbreviations, like "m" for
+      meters, are also supported. For variables with compound units,
+      each unit name is separated by a single space, with exponents
+      other than 1 placed immediately after the name, as in "m s-1"
+      for velocity, "W m-2" for an energy flux, or "km2" for an area.
+
+      Parameters:
+         **name** (*str*) – An input or output variable name, a CSDMS
+         Standard Name.
+
+      Returns:
+         The variable units.
+
+      Return type:
+         str
+
+      -[ Notes ]-
+
+      CSDMS uses the UDUNITS standard from Unidata.
+
+   initialize(model_class, filename)
+
+      Initialize the model.  Filename points to input file.
+
+   set_value(name, src)
+
+      Specify a new value for a model variable.
+
+      This is the setter for the model, used to change the model’s
+      current state. It accepts, through *src*, a new value for a
+      model variable, with the type, size and rank of *src* dependent
+      on the variable.
+
+      Parameters:
+         * **name** (*str*) – An input or output variable name, a
+           CSDMS Standard Name.
+
+         * **src** (*array_like*) – The new value for the specified
+           variable.
+
+   set_value_at_indices(name, inds, src)
+
+      Specify a new value for a model variable at particular indices.
+
+      Parameters:
+         * **name** (*str*) – An input or output variable name, a
+           CSDMS Standard Name.
+
+         * **inds** (*array_like*) – The indices into the variable
+           array.
+
+         * **src** (*array_like*) – The new value for the specified
+           variable.
+
+   update()
+
+      Advance model state by one time step.
+
+      Perform all tasks that take place within one pass through the
+      model’s time loop. This typically includes incrementing all of
+      the model’s state variables. If the model’s state variables
+      don’t change in time, then they can be computed by the
+      "initialize()" method and this method can return with no action.
+
+   update_until(time)
+
+      Advance model state until the given time.
+
+      Parameters:
+         **time** (*float*) – A model time later than the current
+         model time.
+
+
+libschema.classes module
+========================
+
+This file defines key classes for libSCHEMA.
+
+class libschema.classes.Anomaly
+
+   Bases: "object"
+
+   apply(periodic, period, anom_history)
+
+   apply_vec(periodic, period, anom_history)
+
+   from_dict()
+
+   to_dict()
+
+class libschema.classes.ModEngine
+
+   Bases: "object"
+
+   apply(seasonality, anomaly, periodics, history)
+
+   coefficients()
+
+   from_data()
+
+   from_dict()
+
+   to_dict()
+
+class libschema.classes.Seasonality
+
+   Bases: "object"
+
+   apply(period)
+
+   apply_vec(period_array)
+
+   from_dict()
+
+   to_dict()
+
+
+libschema.model module
+======================
+
+Author: Daniel Philippus Date: 2025-02-05
+
+This file implements the core SCHEMA model class.
+
+class libschema.model.SCHEMA(seasonality: Seasonality, anomaly: Anomaly, periodics: DataFrame, engines: list[tuple[int, ModEngine]], columns: list[str], max_period: int, window: int = 1, stepsize: int = 1, logfile: str = None)
+
+   Bases: "object"
+
+   from_data()
+
+   classmethod from_file(filename: str)
+
+   get_history() -> DataFrame
+
+   initialize_run(period: int)
+
+   log(text, reset=False)
+
+   run_series(data, timestep_col, init_period=1, period_col=None)
+
+      Run a full timeseries at once if modification engines are not
+      present. Otherwise, reverts to run_series_incremental.
+      Period_col specifies a period column if one exists. Returns the
+      predicted array and the data with an added prediction column.
+
+   run_series_incremental(data, period=None)
+
+      Run a full timeseries at once, but internally use the stepwise
+      approach. This is useful if modification engines are in use.
+      Period specifies a period column if one exists.
+
+   run_step(inputs=None, period=None)
+
+      Run a single step, incrementally.  Updates history and returns
+      today’s prediction.
+
+      inputs is a dictionary of the required inputs, unless they have
+      been specified by setting values.
+
+      period can be used to change the current period (e.g., skipping
+      a few days). Otherwise, it increments by 1.
+
+   set_val(key, value, bmiroll=False)
+
+      BMI set-value functionality. You may wish to implement custom
+      functionality here, e.g., to handle specific variables
+      differently.
+
+      bmiroll allows for mismatched timesteps, such as running a
+      daily-resolution model in an hourly NextGen setup. The BMI
+      implementation can pass an array of values which can be handled
+      as a single mean value here.
+
+   to_dict()
+
+   to_file(filename: str)
+
+   trigger_engine(engine: ModEngine)
+
+libschema.model.anomilize(data: DataFrame, timestep: str, by: str, variables: list[str]) -> DataFrame
+
+   Convert a timeseries to an anomaly timeseries.
+
+   Parameters:
+      * **data** (*pd.DataFrame*) – Data to be processed
+
+      * **timestep** (*str*) – Column identifying the main timestep,
+        e.g., date.
+
+      * **by** (*str*) – Column identifying the recurring timestep,
+        e.g., day-of-year.
+
+      * **variables** (*list**[**str**]*) – Columns to analyze.
+
+   Returns:
+      DataFrame indexed on *timestep* and *by*, with *variables*
+      anomalies
+
+   Return type:
+      pd.DataFrame
+
+
+Module contents
+===============
