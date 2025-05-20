@@ -25,6 +25,10 @@ More generally, it also separates concerns: the user just writes the actual mode
 
 ## Implemented Functionality
 
+### Current Status
+
+Core functionality has been implemented and tested with a simplified model concept (see `tests/full_model.py`). BMI support is drafted, but has not been tested. A "full-fledged" model implementation, with the full complexity of something like TempEst 2, has not been tested, but in principle should work.
+
 ### Core Functionality
 
 - Model initialization
@@ -41,7 +45,7 @@ LibSCHEMA comes with a couple of utilities I built for my own use that might be 
 
 ## Required Functionality
 
-The big pieces that needs to be implemented are the actual seasonality and anomaly functions.  Additionally, the implementation needs to specify data requirements and the like. Seasonality and anomaly functions should be capable of running vectorized if you intend to use `run_series` to run in a single pass.
+The big pieces that needs to be implemented are the actual seasonality and anomaly functions, which are provided as classes to make life easier with configuration files, coefficient exporting, etc. Templates are provided in `classes.py`.  Additionally, the implementation needs to specify data requirements and the like. Seasonality and anomaly functions should be capable of running vectorized if you intend to use `run_series` to run in a single pass.
 
 If you want the model to be able to fit itself, you also need to define a `from_data` method. Without that, a model can still be specified with coefficients, and you could calibrate it in the traditional way, but it can't automatically identify a fit.
 
@@ -49,4 +53,4 @@ If your implementation uses any modification engines, implementation for those n
 
 
 
-Reference: Philippus, Corona, Schneider, Rust, and Hogue, 2025, "Satellite-Based Spatial-Statistical Modeling of Daily Stream Water Temperatures at the CONUS Scale", *Journal of Hydrology*.
+Reference: Philippus, Corona, Schneider, Rust, and Hogue, 2025, "Satellite-Based Spatial-Statistical Modeling of Daily Stream Water Temperatures at the CONUS Scale", *Journal of Hydrology*, in press.

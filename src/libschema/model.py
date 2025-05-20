@@ -8,10 +8,13 @@ This file implements the core SCHEMA model class.
 import pandas as pd
 import numpy as np
 from yaml import load, dump, Loader
-# import classes
+from libschema.classes import Anomaly, Seasonality, ModEngine
 
 
-def anomilize(data, timestep, by, variables):
+def anomilize(data: pd.DataFrame,
+              timestep: str,
+              by: str,
+              variables: list[str]) -> pd.DataFrame:
     """
     Convert a timeseries to an anomaly timeseries.
 
@@ -37,8 +40,15 @@ def anomilize(data, timestep, by, variables):
 
 
 class SCHEMA(object):
-    def __init__(self, seasonality, anomaly, periodics, engines, columns,
-                 max_period, window=1, stepsize=1, logfile=None):
+    def __init__(self, seasonality: Seasonality,
+                 anomaly: Anomaly,
+                 periodics: pd.DataFrame,
+                 engines: list[tuple[int, ModEngine]],
+                 columns: list[str],
+                 max_period: int,
+                 window:int=1,
+                 stepsize:int=1,
+                 logfile:str=None):
         """
         Parameters
         ----------
@@ -85,7 +95,7 @@ class SCHEMA(object):
         self.values = {}
     
     @classmethod
-    def from_file(cls, filename):
+    def from_file(cls, filename: str):
         try:
             with open(filename) as f:
                 coefs = load(f, Loader)
@@ -94,7 +104,7 @@ class SCHEMA(object):
             with open("unspecified_log.txt", "w") as f:
                 f.write(f"Error in loading {filename}: {e}")
     
-    def to_file(self, filename):
+    def to_file(self, filename: str):
         data = {
             "seasonality": self.seasonality,
             "anomaly": self.anomaly,
@@ -120,8 +130,9 @@ class SCHEMA(object):
             with open(self.logfile, "w" if reset else "a") as f:
                 f.write(text + "\n")
 
-    def initialize_run(self, period):
-        # Logs allow efficient handling of a rolling anomaly
+    def initialize_run(self, period: int):
+        # Initialize a model run for incremental use. Period is the initial
+        # period.
         self.output = None
         self.periodic_output = None
         self.anomaly_output = None
@@ -133,10 +144,10 @@ class SCHEMA(object):
                                                         "ssn": [],
                                                         "output": []}
     
-    def get_history(self):
+    def get_history(self) -> pd.DataFrame:
         return pd.DataFrame(self.history)
         
-    def trigger_engine(self, engine):
+    def trigger_engine(self, engine: ModEngine):
         (self.seasonality, self.anomaly, self.periodics) =\
             engine.apply(self.seasonality, self.anomaly, self.periodics,
                          self.get_history())
