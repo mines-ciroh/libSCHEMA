@@ -37,7 +37,6 @@ def anomilize(data, timestep, by, variables):
 
 
 class SCHEMA(object):
-    # TODO: timestep tracking
     def __init__(self, seasonality, anomaly, periodics, engines, columns,
                  max_period, window=1, stepsize=1, logfile=None):
         """
@@ -129,7 +128,10 @@ class SCHEMA(object):
         self.anomaly_history = None
         self.step = 0
         self.period = period
-        self.history = {x: [] for x in self.columns} | {"period": []}
+        self.history = {x: [] for x in self.columns} | {"period": [],
+                                                        "anomaly": [],
+                                                        "ssn": [],
+                                                        "output": []}
     
     def get_history(self):
         return pd.DataFrame(self.history)
@@ -175,20 +177,26 @@ class SCHEMA(object):
         else:
             self.period = period
         self.history["period"].append(self.period)
-        today = self.periodics.loc[self.periodics["period"] == self.period].set_index("period")
+        # today = self.periodics.loc[self.periodics["period"] == self.period].set_index("period")
         # Now, build the prediction
         ssn = self.seasonality.apply(self.period)
         self.periodic_output = ssn
+        self.history["ssn"].append(ssn)
         # Compute anomaly history
         window = self.window if self.window <= self.step else self.step
+        # All this weird stuff is to get the right coverage.
         history = pd.DataFrame({k: self.history[k][-window:]
                                 for k in self.columns + ["period"]}).set_index("period")
-        anom_hist = (history - today)[self.columns]
+        # Specifically, we don't want a bunch of NAs for unmatched rows in periodics.
+        anom_hist = (history - self.periodics.set_index("period").filter(history.index, axis=0)
+                     )[self.columns]
         self.anomaly_history = anom_hist
         anom = self.anomaly.apply(ssn, self.period, anom_hist)
         self.anomaly_output = anom
+        self.history["anomaly"].append(anom)
         # Final result
         pred = ssn + anom
+        self.history["output"].append(pred)
         self.output = pred
         # Run triggers
         for eng_step in self.engine_periods:

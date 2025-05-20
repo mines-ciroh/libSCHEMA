@@ -54,12 +54,15 @@ def test_model(rtn=False):
     anomaly = actual - refval
     timestep = np.arange(len(periodic_steps))
     
-    analytic = (mean + np.sin((periodic_steps - phase)/period*6.28) * amplitude +
-                pd.Series(anomaly).rolling(window, min_periods=1).mean() * sensitivity)
+    ssn = mean + np.sin((periodic_steps - phase)/period*6.28) * amplitude
+    anom = pd.Series(anomaly).rolling(window, min_periods=1).mean() * sensitivity
+    analytic = ssn + anom
     data = pd.DataFrame({
         "T": timestep,
         "tp": periodic_steps,
         "x": actual,
+        "ssn": ssn,
+        "anom": anom,
         "y": analytic
         })
     periodics = pd.DataFrame({
