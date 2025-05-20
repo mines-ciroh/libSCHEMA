@@ -90,8 +90,16 @@ def test_model(rtn=False):
         print("Passed incremental version")
     else:
         print("Failed incremental version")
-    if pass_incr and pass_fr:
+    model.to_file("testmod.yaml")
+    model = SCHEMA.from_file("testmod.yaml")
+    full_run_file = model.run_series(data, "T", 0, "tp")[1]
+    pass_frf = abs(full_run_file["prediction"] - full_run_file["y"]).max() < 0.001
+    if pass_frf:
+        print("Passed file-load version")
+    else:
+        print("Failed file-load version")
+    if pass_incr and pass_fr and pass_frf:
         return True
     if rtn:
-        return (False, data, full_run, incr_run, model)
+        return (False, data, full_run, incr_run, full_run_file, model)
     return False
