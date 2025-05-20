@@ -7,6 +7,17 @@ For that reason, this is a model-agnostic Python implementation of SCHEMA, which
 
 Note: in Python, it is libschema (`import libschema`), not libSCHEMA. Easier to type.
 
+## Quick Start
+
+`pip install libschema`.
+
+An API reference is included in `api_ref.txt`, and the test `tests/full_model.py` serves as an example of a simple implementation. Some key information:
+
+- The core SCHEMA implementation is `libschema.SCHEMA` (from `model.py`). You can directly use the SCHEMA class to implement models, specifying seasonality and anomaly classes and the other required inputs. You can also extend it to add new functionality, such as automatically fitting a model from data. In the full-model test, the actual model implementation is two simple class definitions (26 lines of code) and the SCHEMA initialization. This provides a model that handles configuration files, stepwise or full-timeseries model execution, etc.
+- Templates for Anomaly, Seasonality, and ModEngine (coefficient modification engine) classes are in `classes.py`.
+- The Basic Model Interface implementation for NextGen is `libschema.SchemaBmi`, from `bmi.py`. This should work out of the box, with the user just providing some metadata and a SCHEMA config file. I have not tested it yet, but it is derived from a known working implementation.
+- The `analysis` submodule provides some helper functions for cross-validation and goodness-of-fit metrics.
+
 ## General Concept
 
 A SCHEMA model has three basic components: coefficient estimation, seasonality, and anomaly.  Coefficient estimation is too application-specific for a generic implementation to be useful, so that's left to be handled externally.  This implementation handles seasonality (or any periodic component) and anomaly logic.
@@ -27,7 +38,7 @@ More generally, it also separates concerns: the user just writes the actual mode
 
 ### Current Status
 
-Core functionality has been implemented and tested with a simplified model concept (see `tests/full_model.py`). BMI support is drafted, but has not been tested. A "full-fledged" model implementation, with the full complexity of something like TempEst 2, has not been tested, but in principle should work.
+Core functionality has been implemented and tested with a simplified model concept (see `tests/full_model.py`). BMI support is drafted, but has not been tested. A "full-fledged" model implementation, with the full complexity of something like TempEst 2, has not been tested, but in principle should work. Modification engines are implemented in principle, but have not been tested.
 
 ### Core Functionality
 
