@@ -125,9 +125,11 @@ class SCHEMA(object):
         # Logs allow efficient handling of a rolling anomaly
         self.output = None
         self.periodic_output = None
+        self.anomaly_output = None
+        self.anomaly_history = None
         self.step = 0
         self.period = period
-        self.history = {x: [] for x in self.columns}
+        self.history = {x: [] for x in self.columns} | {"period": []}
     
     def get_history(self):
         return pd.DataFrame(self.history)
@@ -150,7 +152,7 @@ class SCHEMA(object):
             value = np.mean(value)
         self.values[key] = value
 
-    def step(self, inputs=None, period=None):
+    def run_step(self, inputs=None, period=None):
         """
         Run a single step, incrementally.  Updates history and returns
         today's prediction.
@@ -172,15 +174,19 @@ class SCHEMA(object):
             self.period += 1
         else:
             self.period = period
-        today = self.periodics.loc[self.periodics["period"] == self.period]
+        self.history["period"].append(self.period)
+        today = self.periodics.loc[self.periodics["period"] == self.period].set_index("period")
         # Now, build the prediction
         ssn = self.seasonality.apply(self.period)
         self.periodic_output = ssn
         # Compute anomaly history
         window = self.window if self.window <= self.step else self.step
-        history = pd.DataFrame({"period": self.period} | {k: self.history[k][-window:] for k in self.columns})
+        history = pd.DataFrame({k: self.history[k][-window:]
+                                for k in self.columns + ["period"]}).set_index("period")
         anom_hist = (history - today)[self.columns]
+        self.anomaly_history = anom_hist
         anom = self.anomaly.apply(ssn, self.period, anom_hist)
+        self.anomaly_output = anom
         # Final result
         pred = ssn + anom
         self.output = pred
@@ -196,17 +202,17 @@ class SCHEMA(object):
         This is useful if modification engines are in use.
         Period specifies a period column if one exists.
         """
-        self.initialize_run()
+        self.initialize_run(0 if period is None else data[period].iloc[0])
         for row in data.itertuples():
             inputs = {k: getattr(row, k) for k in self.columns}
             if period is None:
                 perval = None
             else:
                 perval = getattr(row, period)
-            yield self.step(inputs, perval)
+            yield self.run_step(inputs, perval)
         
 
-    def run_series(self, data, init_period=1, period_col=None):
+    def run_series(self, data, timestep_col, init_period=1, period_col=None):
         """
         Run a full timeseries at once if modification engines are not present.
         Otherwise, reverts to run_series_incremental.
@@ -228,10 +234,14 @@ class SCHEMA(object):
             period_steps = data[period_col].to_numpy()
         ssn = self.seasonality.apply_vec(period_steps)
         data["period"] = period_steps
-        anom_hist = data.set_index("period")[self.columns] - self.periodics[self.columns]
+        periodics = self.periodics.set_index("period")
+        selcols = [c for c in self.columns if not c in [timestep_col,
+                                                        period_col]]
+        anom_hist = (data.set_index([timestep_col, "period"])[selcols] -
+                     periodics[selcols])
         anom = self.anomaly.apply_vec(ssn, period_steps, anom_hist)
         pred = ssn + anom
-        data["prediction"] = pred
+        data["prediction"] = pred.to_numpy()
         return (pred, data)
 
     def from_data(data):
