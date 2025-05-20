@@ -1,6 +1,6 @@
 # -*- coding: utf-8 -*-
 """
-This file defines a modification engine class.
+This file defines key classes for libSCHEMA.
 """
 
 class ModEngine(object):
@@ -25,6 +25,9 @@ class ModEngine(object):
 class Seasonality(object):
     def apply(self, period):
         raise NotImplementedError("Seasonality.apply")
+    
+    def apply_vec(self, period_array):
+        raise NotImplementedError("Seasonality.apply_vec")
         
     def to_dict(self):
         raise NotImplementedError("Seasonality.to_dict")
@@ -36,6 +39,9 @@ class Seasonality(object):
 class Anomaly(object):
     def apply(self, periodic, period, anom_history):
         raise NotImplementedError("Anomaly.apply")
+    
+    def apply_vec(self, periodic, period, anom_history):
+        raise NotImplementedError("Anomaly.apply_vec")
         
     def to_dict(self):
         raise NotImplementedError("Anomaly.to_dict")

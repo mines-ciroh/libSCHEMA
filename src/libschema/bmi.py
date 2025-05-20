@@ -6,7 +6,6 @@ Date: 2025-02-05
 BMI implementation of SCHEMA.
 """
 
-from libschema import SCHEMA
 from bmipy import Bmi
 import numpy as np
 

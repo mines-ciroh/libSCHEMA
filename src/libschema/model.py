@@ -11,14 +11,16 @@ from yaml import load, dump, Loader
 # import classes
 
 
-def anomilize(data, by, variables):
+def anomilize(data, timestep, by, variables):
     """
-    Generate anomaly data.
+    Convert a timeseries to an anomaly timeseries.
 
     Parameters
     ----------
     data : pd.DataFrame
         Data to be processed
+    timestep : str
+        Column identifying the main timestep, e.g., date.
     by : str
         Column identifying the recurring timestep, e.g., day-of-year.
     variables : list[str]
@@ -27,16 +29,17 @@ def anomilize(data, by, variables):
     Returns
     -------
     pd.DataFrame
-        DataFrame indexed on `by`, with `variables` anomalies
+        DataFrame indexed on `timestep` and `by`, with `variables` anomalies
 
     """
-    data = data[[by] + variables].dropna()
-    return data.groupby(by).apply(lambda x: x-x.mean(), include_groups=False).droplevel(1)
+    data = data[[timestep, by] + variables].dropna()
+    return data.set_index([timestep, by])[variables] - data.groupby(by)[variables].mean()
 
 
 class SCHEMA(object):
     # TODO: timestep tracking
-    def __init__(self, seasonality, anomaly, periodics, engines, columns, window=1, stepsize=1, logfile=None):
+    def __init__(self, seasonality, anomaly, periodics, engines, columns,
+                 max_period, window=1, stepsize=1, logfile=None):
         """
         Parameters
         ----------
@@ -50,10 +53,13 @@ class SCHEMA(object):
             Modification engines to apply at specified frequencies.
         columns : [str]
             List of required column names.
-        window : int
-            Lookback window for anomaly history.
-        stepsize : number
-            Number of steps (in periodic function) per runtime step
+        max_period : int
+            Point at which the period resets to 0 if not specified.
+        window : int, optional
+            Lookback window for anomaly history. The default is 1.
+        stepsize : number, optional
+            Number of steps (in periodic function) per runtime step. The
+            default is 1.
         logfile : str, optional
             Where to log, if any. The default is None.
 
@@ -71,6 +77,7 @@ class SCHEMA(object):
         self.engine_periods = [i[0] for i in engines]
         self.engines = {i[0]: i[1] for i in engines}
         self.columns = columns
+        self.max_period = max_period
         self.window = window
         self.stepsize = stepsize
         self.logfile = logfile
@@ -83,7 +90,6 @@ class SCHEMA(object):
         try:
             with open(filename) as f:
                 coefs = load(f, Loader)
-            # TODO: do stuff to coefs
             return cls(**coefs)
         except Exception as e:
             with open("unspecified_log.txt", "w") as f:
@@ -93,8 +99,10 @@ class SCHEMA(object):
         data = {
             "seasonality": self.seasonality,
             "anomaly": self.anomaly,
+            "periodics": self.periodics,
             "engines": [(i, self.engines[i]) for i in self.engine_periods],
             "columns": self.columns,
+            "max_period": self.max_period,
             "window": self.window,
             "stepsize": self.stepsize,
             "logfile": self.logfile
@@ -130,8 +138,14 @@ class SCHEMA(object):
                          self.get_history())
     
     def set_val(self, key, value, bmiroll=False):
-        # You may wish to implement custom functionality here, e.g. to process
-        # different variables differently.
+        """
+        BMI set-value functionality. You may wish to implement custom functionality
+        here, e.g., to handle specific variables differently.
+        
+        bmiroll allows for mismatched timesteps, such as running a daily-resolution
+        model in an hourly NextGen setup. The BMI implementation can pass an
+        array of values which can be handled as a single mean value here.
+        """
         if bmiroll:
             value = np.mean(value)
         self.values[key] = value
@@ -140,6 +154,12 @@ class SCHEMA(object):
         """
         Run a single step, incrementally.  Updates history and returns
         today's prediction.
+        
+        inputs is a dictionary of the required inputs, unless they have been
+        specified by setting values.
+        
+        period can be used to change the current period (e.g., skipping a few days).
+        Otherwise, it increments by 1.
         """
         for k in self.columns:
             if not k in inputs:
@@ -152,13 +172,13 @@ class SCHEMA(object):
             self.period += 1
         else:
             self.period = period
-        today = self.periodics[self.periodics["period"] == self.period]
+        today = self.periodics.loc[self.periodics["period"] == self.period]
         # Now, build the prediction
         ssn = self.seasonality.apply(self.period)
         self.periodic_output = ssn
         # Compute anomaly history
         window = self.window if self.window <= self.step else self.step
-        history = pd.DataFrame({"period": self.step} | {k: self.history[k][-window:] for k in self.columns})
+        history = pd.DataFrame({"period": self.period} | {k: self.history[k][-window:] for k in self.columns})
         anom_hist = (history - today)[self.columns]
         anom = self.anomaly.apply(ssn, self.period, anom_hist)
         # Final result
@@ -170,27 +190,49 @@ class SCHEMA(object):
                 self.trigger_engine(self.engines[eng_step])
         return pred
     
-    def run_series_incremental(self, data):
+    def run_series_incremental(self, data, period=None):
         """
         Run a full timeseries at once, but internally use the stepwise approach.
-        data must have columns date (as an actual date type), tmax.
-        Will be returned with columns date, day, at, actemp, anom, temp.mod
+        This is useful if modification engines are in use.
+        Period specifies a period column if one exists.
         """
         self.initialize_run()
         for row in data.itertuples():
             inputs = {k: getattr(row, k) for k in self.columns}
-            yield self.step(inputs)
+            if period is None:
+                perval = None
+            else:
+                perval = getattr(row, period)
+            yield self.step(inputs, perval)
         
 
-    def run_series(self, data):
+    def run_series(self, data, init_period=1, period_col=None):
         """
-        Run a full timeseries at once.
-        data must have columns date (as an actual date type), tmax.
-        Will be returned with new columns day, actemp, anom, temp.mod
-        This runs things all at once, so it's much faster, but ignores engines.
+        Run a full timeseries at once if modification engines are not present.
+        Otherwise, reverts to run_series_incremental.
+        Period_col specifies a period column if one exists.
+        Returns the predicted array and the data with an added prediction
+        column.
         """
-        output = list(self.run_series_incremental(data))
-        return self.get_history().assign(output=output)
+        if len(self.engine_periods) > 0:
+            # There are modification engines, so we need to run incrementally.
+            # This could be "smartened" to run in blocks except when engine
+            # application is needed, but this will do for now.
+            output = list(self.run_series_incremental(data, period))
+            return self.get_history().assign(output=output)
+        # Run in a single pass.
+        if period_col is None:
+            period_steps = (np.arange(init_period, len(data) + init_period) *
+                            self.stepsize) % self.max_period
+        else:
+            period_steps = data[period_col].to_numpy()
+        ssn = self.seasonality.apply_vec(period_steps)
+        data["period"] = period_steps
+        anom_hist = data.set_index("period")[self.columns] - self.periodics[self.columns]
+        anom = self.anomaly.apply_vec(ssn, period_steps, anom_hist)
+        pred = ssn + anom
+        data["prediction"] = pred
+        return (pred, data)
 
     def from_data(data):
         raise NotImplementedError("SCHEMA.from_data")
