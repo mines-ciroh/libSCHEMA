@@ -261,7 +261,7 @@ class SCHEMA(object):
                      periodics[selcols])
         anom = self.anomaly.apply_vec(ssn, period_steps, anom_hist)
         pred = ssn + anom
-        data["prediction"] = pred.to_numpy()
+        data["prediction"] = pred
         self.prediction = pred
         return (pred, data)
 
