@@ -9,35 +9,7 @@ import pandas as pd
 import numpy as np
 from yaml import load, dump, Loader
 from libschema.classes import Anomaly, Seasonality, ModEngine
-
-
-def anomilize(data: pd.DataFrame,
-              timestep: str,
-              by: str,
-              variables: list[str]) -> pd.DataFrame:
-    """
-    Convert a timeseries to an anomaly timeseries.
-
-    Parameters
-    ----------
-    data : pd.DataFrame
-        Data to be processed
-    timestep : str
-        Column identifying the main timestep, e.g., date.
-    by : str
-        Column identifying the recurring timestep, e.g., day-of-year.
-    variables : list[str]
-        Columns to analyze.
-
-    Returns
-    -------
-    pd.DataFrame
-        DataFrame indexed on `timestep` and `by`, with `variables` anomalies
-
-    """
-    data = data[[timestep, by] + variables].dropna()
-    return data.set_index([timestep, by])[variables] - data.groupby(by)[variables].mean()
-
+from libschema.analysis import anomilize
 
 class SCHEMA(object):
     def __init__(self, seasonality: Seasonality,

@@ -12,6 +12,33 @@ import numpy as np
 import os
 rng = np.random.default_rng()
 
+def anomilize(data: pd.DataFrame,
+              timestep: str,
+              by: str,
+              variables: list[str]) -> pd.DataFrame:
+    """
+    Convert a timeseries to an anomaly timeseries.
+
+    Parameters
+    ----------
+    data : pd.DataFrame
+        Data to be processed
+    timestep : str
+        Column identifying the main timestep, e.g., date.
+    by : str
+        Column identifying the recurring timestep, e.g., day-of-year.
+    variables : list[str]
+        Columns to analyze.
+
+    Returns
+    -------
+    pd.DataFrame
+        DataFrame indexed on `timestep` and `by`, with `variables` anomalies
+
+    """
+    data = data[[timestep, by] + variables].dropna()
+    return data.set_index([timestep, by])[variables] - data.groupby(by)[variables].mean()
+
 
 def nse(sim, obs):
     sim = sim.to_numpy()
@@ -22,7 +49,7 @@ def nse(sim, obs):
     return np.NaN
     
 
-def perf_summary(data, obs="temperature", mod="temp.mod", dates="date",
+def perf_summary(data, obs="temperature", mod="prediction", timestep="date", period="day", long_timestep=lambda x: x["date"].dt.year,
                  statlag=1):
     """Summarize the performance of a modeled column in data compared to an
     observed column.
@@ -49,8 +76,12 @@ def perf_summary(data, obs="temperature", mod="temp.mod", dates="date",
         Column containing observations.
     mod : str
         Column containing predictions.
-    dates : str
-        Column containing dates.  Must be an actual Pandas datetime column.
+    timestep : str
+        Column containing the timestep, e.g., date.
+    period : str
+        Column containing the period, e.g., day-of-year.
+    long_timestep : function
+        Column for extracting a long grouping period (e.g., year) from the data frame.
     statlag : integer
         How many days of lag to use for stationary NSE. Useful for evaluating
         forecast lead time.
@@ -61,14 +92,12 @@ def perf_summary(data, obs="temperature", mod="temp.mod", dates="date",
         Single-row data frame containing performance statistics.
 
     """
-    data["day"] = data[dates].dt.day_of_year
-    anomod = anomalies(data[dates], data[mod])
-    anobs = anomalies(data[dates], data[obs])
-    clim = data[[dates, "day"]].merge(
-        data.groupby("day", as_index=False)[obs].mean())
-    anom_nse = nse(anomod, anobs)
+    anoms = anomilize(data, timestep, period, [obs, mod])
+    clim = data[[timestep, period]].merge(
+        data.groupby(period, as_index=False)[obs].mean())
+    anom_nse = nse(anoms[mod], anoms[obs])
     clim_nse = nse(clim[obs], data[obs])
-    stat_nse = nse(data[obs][:-1], data[obs][1:])
+    stat_nse = nse(data[obs][:-statlag], data[obs][statlag:])
     return pd.DataFrame({
             "R2": [data[obs].corr(data[mod])**2],
             "RMSE": np.sqrt(np.mean((data[mod] - data[obs])**2)),
@@ -78,7 +107,7 @@ def perf_summary(data, obs="temperature", mod="temp.mod", dates="date",
             "AnomalyNSE": anom_nse,
             "Pbias": np.mean(data[mod] - data[obs]) / np.mean(data[obs])*100,
             "Bias": np.mean(data[mod] - data[obs]),
-            "MaxMiss": data.assign(year=lambda x: x[dates].dt.year).groupby("year")[[obs, mod]].max().assign(maxmiss=lambda x: abs(x[obs] - x[mod]))["maxmiss"].mean()
+            "MaxMiss": data.assign(long=long_timestep).groupby(long)[[obs, mod]].max().assign(maxmiss=lambda x: abs(x[obs] - x[mod]))["maxmiss"].mean()
         })
 
 def kfold(data, modbuilder, parallel=0, by="id", k=10, output=None, redo=False):
