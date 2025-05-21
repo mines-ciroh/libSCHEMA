@@ -93,6 +93,7 @@ class SCHEMA(object):
         self.output = None
         self.periodic_output = None
         self.values = {}
+        self.prediction = None
     
     @classmethod
     def from_file(cls, filename: str):
@@ -243,7 +244,7 @@ class SCHEMA(object):
             # There are modification engines, so we need to run incrementally.
             # This could be "smartened" to run in blocks except when engine
             # application is needed, but this will do for now.
-            output = list(self.run_series_incremental(data, period))
+            output = list(self.run_series_incremental(data, period_col))
             return self.get_history().assign(output=output)
         # Run in a single pass.
         if period_col is None:
@@ -261,6 +262,7 @@ class SCHEMA(object):
         anom = self.anomaly.apply_vec(ssn, period_steps, anom_hist)
         pred = ssn + anom
         data["prediction"] = pred.to_numpy()
+        self.prediction = pred
         return (pred, data)
 
     def from_data(data):
