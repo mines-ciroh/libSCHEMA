@@ -107,7 +107,7 @@ def perf_summary(data, obs="temperature", mod="prediction", timestep="date", per
             "AnomalyNSE": anom_nse,
             "Pbias": np.mean(data[mod] - data[obs]) / np.mean(data[obs])*100,
             "Bias": np.mean(data[mod] - data[obs]),
-            "MaxMiss": data.assign(long=long_timestep).groupby(long)[[obs, mod]].max().assign(maxmiss=lambda x: abs(x[obs] - x[mod]))["maxmiss"].mean()
+            "MaxMiss": data.assign(long=long_timestep).groupby("long")[[obs, mod]].max().assign(maxmiss=lambda x: abs(x[obs] - x[mod]))["maxmiss"].mean()
         })
 
 def kfold(data, modbuilder, parallel=0, by="id", k=10, output=None, redo=False):
