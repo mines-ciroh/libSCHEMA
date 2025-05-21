@@ -62,6 +62,62 @@ If you want the model to be able to fit itself, you also need to define a `from_
 
 If your implementation uses any modification engines, implementation for those needs to be provided, and it may be useful to develop a custom configuration-file retriever (otherwise libSCHEMA will try to pickle them in the main config file).
 
+### Example
+
+Here is a simple example with a toy model.
+
+```
+class TestSeasonality(Seasonality):
+    def __init__(self, mean, phase, amplitude, period):
+        self.mean = mean
+        self.phase = phase
+        self.amplitude = amplitude
+        self.period = period
+    
+    def apply(self, period):
+        return self.mean + np.sin((period - self.phase)/self.period*6.28) * self.amplitude
+    
+    def apply_vec(self, period):
+        return self.apply(period)
+    
+
+class TestAnomaly(Anomaly):
+    def __init__(self, sensitivity, window):
+        self.sensitivity = sensitivity
+        self.window = window
+    
+    def apply(self, periodic, period, anom_history):
+        return self.sensitivity * np.mean(
+            anom_history["x"][-self.window:])
+    
+    def apply_vec(self, periodic, period, anom_history):
+        return self.sensitivity * anom_history["x"].rolling(
+            self.window, min_periods=1).mean()
+            
+sensitivity = 1
+window = 3
+mean = 5
+phase = 12
+amplitude = 8
+period = 36
+
+periodics = pd.DataFrame({
+    "period": np.arange(36),
+    "x": np.cos(np.arange(36))
+    })
+
+model = SCHEMA(
+    TestSeasonality(mean, phase, amplitude, period),
+    TestAnomaly(sensitivity, window),
+    periodics,
+    [],  # no engines used
+    ["T", "tp", "x"],  # input columns
+    period,
+    window
+    )
+
+model.run_series(some_data, "T", 0, "tp")
+```
 
 
 Reference: Philippus, Corona, Schneider, Rust, and Hogue, 2025, "Satellite-Based Spatial-Statistical Modeling of Daily Stream Water Temperatures at the CONUS Scale", *Journal of Hydrology*, in press.
