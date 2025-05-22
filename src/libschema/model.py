@@ -204,13 +204,13 @@ class SCHEMA(object):
             yield self.run_step(inputs, perval)
         
 
-    def run_series(self, data, timestep_col, init_period=1, period_col=None):
+    def run_series(self, data, timestep_col, init_period=1, period_col=None, context=True):
         """
         Run a full timeseries at once if modification engines are not present.
         Otherwise, reverts to run_series_incremental.
         Period_col specifies a period column if one exists.
-        Returns the predicted array and the data with an added prediction
-        column.
+        Returns the predicted array (if context=False) or the data with an added prediction
+        column (if context=True).
         """
         if len(self.engine_periods) > 0:
             # There are modification engines, so we need to run incrementally.
@@ -235,7 +235,9 @@ class SCHEMA(object):
         pred = ssn + anom
         data["prediction"] = pred
         self.prediction = pred
-        return (pred, data)
+        if context:
+            return data
+        return pred
 
     def from_data(data):
         raise NotImplementedError("SCHEMA.from_data")
