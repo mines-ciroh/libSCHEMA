@@ -37,11 +37,15 @@ What sort of convenience features?
 
 More generally, it also separates concerns: the user just writes the actual model mathematics without worrying about the implementation logic. And this is huge, because practically any lumped model can be implemented as SCHEMA with a little contortion. For instance, I'm fairly sure you could just have no seasonal component and an LSTM for anomaly, and you get a BMI-compatible LSTM for free. Or you could easily write a unit hydrograph-based hydrologic model (seasonality = baseflow, anomaly = unit hydrograph) with a couple of simple functions.
 
+Basically, libSCHEMA minimizes the amount of software engineering you have to worry about when building hydrologic models. The minimal example model for testing is about 50 lines of code.
+
+Using libSCHEMA also means that shared infrastructure can be developed for libSCHEMA models in general, like the built-in BMI implementation. In the future, that could be calibration utilities, parallelization tools, or just about anything else - and it'll work for any libSCHEMA model.
+
 ## Implemented Functionality
 
 ### Current Status
 
-Core functionality has been implemented and tested with a simplified model concept (see `tests/full_model.py`). BMI support is drafted, but has not been tested. Testing of a full-fledged model implementation, with the full complexity of something like TempEst 2, is in progress. Modification engines are implemented in principle, but have not been tested.
+Core functionality has been implemented and tested with both a full-fledged model implementation rewritten to use libSCHEMA. BMI support is drafted, but has not been tested. Modification engines are implemented in principle, but have not been tested.
 
 ### Core Functionality
 
@@ -121,7 +125,6 @@ model = SCHEMA(
 
 model.run_series(some_data, "T", 0, "tp")
 ```
-
 
 ## Citation
 
