@@ -94,7 +94,7 @@ class SCHEMA(object):
     
     def to_dict(self):
         coefs = {"window": self.window}
-        for item in [self.seasonality, self.anomaly, self.engines.values()]:
+        for item in [self.seasonality, self.anomaly] + list(self.engines.values()):
             coefs = coefs | item.to_dict()
         return coefs
     
