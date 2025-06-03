@@ -8,6 +8,8 @@ For that reason, this is a model-agnostic Python implementation of SCHEMA, which
 
 Note: in Python, it is libschema (`import libschema`), not libSCHEMA. Easier to type.
 
+[Documentation Website](https://mines-ciroh.github.io/libSCHEMA/)
+
 ## Quick Start
 
 `pip install libschema`.
@@ -128,4 +130,4 @@ model.run_series(some_data, "T", 0, "tp")
 
 ## Citation
 
-Philippus, Corona, Schneider, Rust, and Hogue, 2025, "Satellite-Based Spatial-Statistical Modeling of Daily Stream Water Temperatures at the CONUS Scale", *Journal of Hydrology*, in press.
+Philippus, Corona, Schneider, Rust, and Hogue, 2025, "Satellite-Based Spatial-Statistical Modeling of Daily Stream Water Temperatures at the CONUS Scale", *Journal of Hydrology*, doi:[10.1016/j.jhydrol.2025.133321](https://doi.org/10.1016/j.jhydrol.2025.133321).
