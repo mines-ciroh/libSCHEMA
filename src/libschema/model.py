@@ -20,7 +20,8 @@ class SCHEMA(object):
                  max_period: int,
                  window:int=1,
                  stepsize:int=1,
-                 logfile:str=None):
+                 logfile:str=None,
+                 static_coefs:bool=True):
         """
         Parameters
         ----------
@@ -43,6 +44,12 @@ class SCHEMA(object):
             default is 1.
         logfile : str, optional
             Where to log, if any. The default is None.
+        static_coefs : bool, optional
+            For use with modification engines: should engines act on the
+            initial coefficients (True), or the current coefficients (False)?
+            In other words, where engine at timestep is fi(x) of coefficients (x),
+            should xi=fi(x0) or xi=fi(fi-1(fi-2(...(x0))))?
+            The default is True (xi=fi(x0)).
 
         Returns
         -------
@@ -66,6 +73,10 @@ class SCHEMA(object):
         self.periodic_output = None
         self.values = {}
         self.prediction = None
+        self.static_coefs = static_coefs
+        if self.static_coefs:
+            self.ssn_static = self.seasonality
+            self.anom_static = self.anomaly
     
     @classmethod
     def from_file(cls, filename: str):
@@ -121,8 +132,13 @@ class SCHEMA(object):
         return pd.DataFrame(self.history)
         
     def trigger_engine(self, engine: ModEngine):
+        if self.static_coefs:
+            self.ssn_static = self.seasonality
+            self.anom_static = self.anomaly
+        ssn = self.ssn_static if self.static_coefs else self.seasonality
+        anom = self.anom_static if self.static_coefs else self.anomaly
         (self.seasonality, self.anomaly, self.periodics) =\
-            engine.apply(self.seasonality, self.anomaly, self.periodics,
+            engine.apply(ssn, anom, self.periodics,
                          self.get_history())
     
     def set_val(self, key, value, bmiroll=False):
