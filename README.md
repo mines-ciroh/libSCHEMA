@@ -8,7 +8,7 @@ For that reason, this is a model-agnostic Python implementation of SCHEMA, which
 
 Note: in Python, it is libschema (`import libschema`), not libSCHEMA. Easier to type.
 
-[Documentation Website](http://www.rivertempest.org/libschema/readme.html)
+[Documentation Website](https://www.rivertempest.org/libschema/readme.html)
 
 ## Quick Start
 
