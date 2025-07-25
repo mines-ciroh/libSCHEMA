@@ -8,7 +8,7 @@ For that reason, this is a model-agnostic Python implementation of SCHEMA, which
 
 Note: in Python, it is libschema (`import libschema`), not libSCHEMA. Easier to type.
 
-[Documentation Website](https://mines-ciroh.github.io/libSCHEMA/)
+[Documentation Website](http://www.rivertempest.org/libschema/readme.html)
 
 ## Quick Start
 
@@ -21,7 +21,7 @@ An API reference is included in `api_ref.txt`, and the test `tests/full_model.py
 - The Basic Model Interface implementation for NextGen is `libschema.SchemaBmi`, from `bmi.py`. This should work out of the box, with the user just providing some metadata and a SCHEMA config file. I have not tested it yet, but it is derived from a known working implementation.
 - The `analysis` submodule provides some helper functions for cross-validation and goodness-of-fit metrics.
 
-LibSCHEMA is free and open-source software and may be used, modified, redistributed, etc so long as any software built upon it is also open-source under the GNU General Public License v3. If you use LibSCHEMA in your research, please cite Philippus et al. 2025.
+LibSCHEMA is free and open-source software and may be used, modified, redistributed, etc so long as any software built upon it is also open-source under the GNU General Public License v3. If you use LibSCHEMA in your research, please cite TempEst 2 (Philippus et al. 2025), which introduced the SCHEMA framework.
 
 ## General Concept
 
