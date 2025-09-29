@@ -50,6 +50,7 @@ class SchemaBmi(Bmi):
         self._name = name
         self._input_var_names = inputs
         self._output_var_name = output
+        self._output_var_names = [output]
         self._input_map = input_map
     
     def initialize(self, model_class, filename):
@@ -82,68 +83,88 @@ class SchemaBmi(Bmi):
             self.update()
     
     def finalize(self):
+        self._model.log("Finalizing")
         self._model.get_history().to_csv("bmi_run_history.csv", index=False)
         self._model = None
     
     def get_component_name(self):
+        self._model.log("get_component_name")
         return self._name
     
     def get_input_item_count(self):
+        self._model.log("get_input_item_count")
         return len(self._input_var_names)
     
     def get_output_item_count(self):
+        self._model.log("get_output_item_count")
         return len(self._output_var_names)
     
     def get_input_var_names(self):
+        self._model.log("get_input_var_names")
         return self._input_var_names
     
     def get_output_var_names(self):
+        self._model.log("get_output_var_names")
         return self._output_var_names
     
     def get_var_grid(self, name):
+        self._model.log("get_var_grid")
         return 0
     
     def get_var_type(self, name):
+        self._model.log("get_var_type")
         return "float"
     
     def get_var_units(self, name):
+        self._model.log("get_var_units")
         return self._var_units[name]
     
     def get_var_itemsize(self, name):
+        self._model.log("get_var_itemsize")
         return 8
     
     def get_var_nbytes(self, name):
+        self._model.log("get_var_nbytes")
         try:
             return self.get_value_ptr(name).nbytes
         except Exception as e:
             self._model.log(f"Error in get_value_ptr: {e}")
     
     def get_var_location(self, name):
+        self._model.log("get_var_location")
         return "node"
     
     def get_current_time(self):
+        self._model.log("get_current_time")
         return self._timestep
     
     def get_start_time(self):
+        self._model.log("get_start_time")
         return 0.0
     
     def get_end_time(self):
+        self._model.log("get_end_time")
         return self._end_time
     
     def get_time_units(self):
+        self._model.log("get_time_units")
         return self._time_units
     
     def get_time_step(self):
+        self._model.log("get_time_step")
         return 3600.0
     
     def get_value_ptr(self, name):
+        self._model.log("get_value_ptr")
         return self._values[name]
     
     def get_value(self, name, dest):
+        self._model.log("get_value")
         dest[:] = np.array(self.get_value_ptr(name))
         return dest
     
     def get_value_at_indices(self, name, dest, inds):
+        self._model.log("get_value_at_indices")
         return self.get_value(name, dest)
     
     def set_value(self, name, src):
@@ -157,6 +178,7 @@ class SchemaBmi(Bmi):
         self.set_value(name, src)
         
     def get_grid_type(self, grid):
+        self._model.log("get_grid_type")
         return "scalar"
     
     def get_grid_rank(self, grid):
