@@ -58,15 +58,19 @@ class SchemaBmi(Bmi):
         """
         self._model = model_class.from_file(filename)
         self._model.initialize_run(0)
+        self._model.log("LibSCHEMA BMI initialized")
     
     def update(self):
         # self._model.step()
         try:
+            self._model.log("Attempting value updates")
             for k in self._values:
                 self._model.set_val(self._input_map[k], self._values[k])
+            self._model.log("Values updated")
             self._timestep += 3600
             if self._timestep % 86400 < 1:
                 self._values[self._output_var_name] = self._model.run_step()
+            self._model.log("Model step executed")
             # for k in self._values:
             #     if k != self._output_var_name:
             #         self._values[k][0] = self._model.values[self._input_map[k]]
@@ -143,6 +147,7 @@ class SchemaBmi(Bmi):
         return self.get_value(name, dest)
     
     def set_value(self, name, src):
+        self._model.log(f"Attempting value set: {name} = {src}")
         val = src[0]
         self._values[name].append(val)
         self._model.set_val(self._input_map[name], self._values[name][-24:],
