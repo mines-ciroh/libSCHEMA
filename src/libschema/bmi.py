@@ -8,6 +8,7 @@ BMI implementation of SCHEMA.
 
 from bmipy import Bmi
 import numpy as np
+import traceback
 
 logalot = False
 
@@ -80,6 +81,8 @@ class SchemaBmi(Bmi):
             #         self._values[k][0] = self._model.values[self._input_map[k]]
         except Exception as e:
             self._model.log(f"Error in update step: {e}")
+            self._model.log(traceback.format_exc())
+            
     
     def update_until(self, time):
         while self._timestep < time:
@@ -132,6 +135,7 @@ class SchemaBmi(Bmi):
             return self.get_value_ptr(name).nbytes
         except Exception as e:
             self._model.log(f"Error in get_value_ptr: {e}")
+            self._model.log(traceback.format_exc())
     
     def get_var_location(self, name):
         # self._model.log("get_var_location")
