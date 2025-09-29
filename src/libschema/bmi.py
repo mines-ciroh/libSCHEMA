@@ -38,13 +38,13 @@ class SchemaBmi(Bmi):
             Units of outputs in CSDMS standard notation (e.g., "Celsius").
         """
         self._model = None
-        self._values = {k: np.zeros(24) for k in inputs} | {output: np.array([0.0])}
+        self._values = {k: np.array([0.0]) for k in inputs} | {output: np.array([0.0])}
+        self.vlists = {k: [] for k in self._values}
         self._var_units = {k: v for (k, v) in zip(inputs, input_units)} | {output: output_units}
         self._var_loc = {output: "node"}
         self._grids = output
         self._grid_type = "scalar"
         self._timestep = 0.0
-        self.time_index = 0
         self._start_time = 0.0
         self._end_time = np.finfo("float").max
         self._time_units = "s"  # required, unfortunately
@@ -72,7 +72,6 @@ class SchemaBmi(Bmi):
             self._timestep += 3600
             if self._timestep % 86400 < 1:
                 self._values[self._output_var_name][0] = self._model.run_step()
-            self.time_index = (self.time_index + 1) % 24
             self._model.log("Model step executed")
             # for k in self._values:
             #     if k != self._output_var_name:
@@ -172,8 +171,9 @@ class SchemaBmi(Bmi):
     def set_value(self, name, src):
         self._model.log(f"Attempting value set: {name} = {src}")
         val = src[0]
-        self._values[name][self.time_index] = val
-        self._model.set_val(self._input_map[name], self._values[name],
+        self._values[name][0] = val
+        self.vlists[name].append(val)
+        self._model.set_val(self._input_map[name], self.vlists[name][-24:],
                             bmiroll=True)
         
     def set_value_at_indices(self, name, inds, src):
