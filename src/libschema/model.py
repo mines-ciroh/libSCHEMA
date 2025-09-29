@@ -166,7 +166,7 @@ class SCHEMA(object):
         Otherwise, it increments by 1.
         """
         for k in self.columns:
-            if not k in inputs:
+            if not inputs or not k in inputs:
                 if not k in self.values:
                     raise ValueError(f"In step, must provide all specified data. Missing: {k}")
                 inputs[k] = self.values[k]
