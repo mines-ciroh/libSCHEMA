@@ -68,7 +68,8 @@ class SchemaBmi(Bmi):
         try:
             # self._model.log("Attempting value updates")
             for k in self._values:
-                self._model.set_val(self._input_map[k], self._values[k])
+                kr = self._input_map[k] if k in self._input_map else k
+                self._model.set_val(kr, self._values[k])
             # self._model.log("Values updated")
             self._timestep += 3600
             if self._timestep % 86400 < 1:
