@@ -12,6 +12,38 @@ from libschema.classes import Anomaly, Seasonality, ModEngine
 from libschema.analysis import anomilize
 
 class SCHEMA(object):
+    """A generic implementation of the SCHEMA framework (https://doi.org/10.1016/j.jhydrol.2025.133321).
+    
+    Parameters
+    ----------
+    seasonality : classes.Seasonality
+        Seasonality implementation.
+    anomaly : classes.Anomaly
+        Anomaly implementation.
+    periodics : pd.DataFrame with [period, columns]
+        Periodic values of all columns.
+    engines : list of [(frequency, classes.ModEngine)]
+        Modification engines to apply at specified frequencies.
+    columns : [str]
+        List of required column names.
+    max_period : int
+        Point at which the period resets to 0 if not specified.
+    window : int, optional
+        Lookback window for anomaly history. The default is 1.
+    stepsize : number, optional
+        Number of steps (in periodic function) per runtime step. The
+        default is 1.
+    logfile : str, optional
+        Where to log, if any. The default is None.
+    static_coefs : bool, optional
+        For use with modification engines: should engines act on the
+        initial coefficients (True), or the current coefficients (False)?
+        In other words, where engine at timestep is fi(x) of coefficients (x),
+        should xi=fi(x0) or xi=fi(fi-1(fi-2(...(x0))))?
+        The default is True (xi=fi(x0)).
+    init_period : int, optional
+        Default initial period, if any. The default is None.
+    """
     def __init__(self, seasonality: Seasonality,
                  anomaly: Anomaly,
                  periodics: pd.DataFrame,
