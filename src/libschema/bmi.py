@@ -43,7 +43,7 @@ class SchemaBmi(Bmi):
         self._var_loc = {output: "node"}
         self._grids = output
         self._grid_type = "scalar"
-        self.timestep = 0.0
+        self._timestep = 0.0
         self._start_time = 0.0
         self._end_time = np.finfo("float").max
         self._time_units = "s"  # required, unfortunately
