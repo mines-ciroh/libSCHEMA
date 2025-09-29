@@ -40,7 +40,7 @@ class SchemaBmi(Bmi):
         """
         self._model = None
         self._values = {k: np.array([0.0]) for k in inputs} | {output: np.array([0.0])}
-        self.vlists = {k: [] for k in self._values}
+        self.vlists = {k: [0.0] for k in self._values}
         self._var_units = {k: v for (k, v) in zip(inputs, input_units)} | {output: output_units}
         self._var_loc = {output: "node"}
         self._grids = output
