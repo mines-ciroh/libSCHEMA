@@ -66,7 +66,7 @@ class SchemaBmi(Bmi):
                 self._model.set_val(self._input_map[k], self._values[k])
             self._timestep += 3600
             if self._timestep % 86400 < 1:
-                self._values[self._output_var_name] = self._model.step()
+                self._values[self._output_var_name] = self._model.run_step()
             # for k in self._values:
             #     if k != self._output_var_name:
             #         self._values[k][0] = self._model.values[self._input_map[k]]
