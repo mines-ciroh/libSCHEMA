@@ -16,6 +16,24 @@ class SchemaBmi(Bmi):
     """
     BMI implementation for SCHEMA.
     Example: https://github.com/csdms/bmi-example-python/blob/master/heat/bmi_heat.py
+
+    Parameters
+    ----------
+    name : str
+        Model name (e.g., "TempEst-NEXT")
+    inputs : tuple of str
+        Required input variables as CSDMS standard variable names
+        (e.g., "land_surface_air__temperature")
+    input_map : {dict of str:str}
+        Map CSDMS inputs to the names used in the model.  Key = CSDMS name,
+        value = model name.
+    input_units : list of str
+        Units of inputs in CSDMS standard notation (e.g., "Celsius").
+    output : str
+        Output variable as CSDMS standard variable name
+        (e.g., "channel_water__temperature")
+    output_units : str
+        Units of outputs in CSDMS standard notation (e.g., "Celsius").
     """
     def __init__(self, name, inputs, input_map, input_units, output,
                  output_units):
