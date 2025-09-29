@@ -169,8 +169,10 @@ class SCHEMA(object):
         period can be used to change the current period (e.g., skipping a few days).
         Otherwise, it increments by 1.
         """
+        if inputs is None:
+            inputs = {}
         for k in self.columns:
-            if not inputs or not k in inputs:
+            if not k in inputs:
                 if not k in self.values:
                     raise ValueError(f"In step, must provide all specified data. Missing: {k}")
                 inputs[k] = self.values[k]
