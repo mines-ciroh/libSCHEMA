@@ -21,7 +21,8 @@ class SCHEMA(object):
                  window:int=1,
                  stepsize:int=1,
                  logfile:str=None,
-                 static_coefs:bool=True):
+                 static_coefs:bool=True,
+                 init_period:int=None):
         """
         Parameters
         ----------
@@ -50,6 +51,8 @@ class SCHEMA(object):
             In other words, where engine at timestep is fi(x) of coefficients (x),
             should xi=fi(x0) or xi=fi(fi-1(fi-2(...(x0))))?
             The default is True (xi=fi(x0)).
+        init_period : int, optional
+            Default initial period, if any. The default is None.
 
         Returns
         -------
@@ -58,7 +61,7 @@ class SCHEMA(object):
 
         """
         self.step = None
-        self.period = None
+        self.period = init_period
         self.seasonality = seasonality
         self.anomaly = anomaly
         self.periodics = periodics
@@ -98,7 +101,8 @@ class SCHEMA(object):
             "max_period": self.max_period,
             "window": self.window,
             "stepsize": self.stepsize,
-            "logfile": self.logfile
+            "logfile": self.logfile,
+            "init_period": self.period
             }
         with open(filename, "w") as f:
             dump(data, f)
